@@ -22,28 +22,28 @@ public_users.post("/register", (req, res) => {
   return res.status(200).json({ message: "User successfully registered" });
 });
 
-// Get all books using async/await with Axios
+// Get all books
 public_users.get('/', async (req, res) => {
-  try {
-    const response = await axios.get('http://localhost:5000/');
-    return res.status(200).json(response.data);
-  } catch (error) {
-    return res.status(500).json({ message: "Error retrieving books" });
-  }
+  return res.status(200).json(books);
 });
 
+
 // Get book by ISBN using async/await with Axios
-public_users.get('/isbn/:isbn', async (req, res) => {
-  try {
-    const response = await axios.get('http://localhost:5000/');
-    const book = response.data[req.params.isbn];
+// Search by ISBN using Promises with Axios
+public_users.get('/isbn/:isbn', (req, res) => {
+  axios.get('http://localhost:5000/')
+    .then(response => {
+      const book = response.data[req.params.isbn];
 
-    if (book) return res.status(200).json(book);
+      if (book) {
+        return res.status(200).json(book);
+      }
 
-    return res.status(404).json({ message: "Book not found" });
-  } catch (error) {
-    return res.status(500).json({ message: "Error retrieving book" });
-  }
+      return res.status(404).json({ message: "Book not found" });
+    })
+    .catch(error => {
+      return res.status(500).json({ message: "Error retrieving book" });
+    });
 });
 
 // Get books by author using async/await with Axios
