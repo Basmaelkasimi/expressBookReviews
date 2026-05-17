@@ -1,98 +1,82 @@
 const express = require('express');
+const axios = require('axios');
+
 let books = require("./booksdb.js");
-let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
+
 const public_users = express.Router();
 
-const axios = require('axios');
-// Register new user
 public_users.post("/register", (req, res) => {
-
-  const username = req.body.username;
-  const password = req.body.password;
+  const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(404).json({
-      message: "Username and password required"
-    });
+    return res.status(404).json({ message: "Username and password required" });
   }
 
-  let userExists = users.some(
-    (user) => user.username === username
-  );
-
-  if (userExists) {
-    return res.status(404).json({
-      message: "User already exists"
-    });
+  if (users.some(user => user.username === username)) {
+    return res.status(404).json({ message: "User already exists" });
   }
 
-  users.push({
-    username: username,
-    password: password
-  });
+  users.push({ username, password });
 
-  return res.status(200).json({
-    message: "User successfully registered"
-  });
+  return res.status(200).json({ message: "User successfully registered" });
 });
 
-
-// Get all books
-public_users.get('/', function (req, res) {
-
-  return res.status(200).json(books);
-
+// Get all books using async/await with Axios
+public_users.get('/', async (req, res) => {
+  try {
+    const response = await axios.get('http://localhost:5000/');
+    return res.status(200).json(response.data);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving books" });
+  }
 });
 
+// Get book by ISBN using async/await with Axios
+public_users.get('/isbn/:isbn', async (req, res) => {
+  try {
+    const response = await axios.get('http://localhost:5000/');
+    const book = response.data[req.params.isbn];
 
-// Get by ISBN
-public_users.get('/isbn/:isbn', function (req, res) {
+    if (book) return res.status(200).json(book);
 
+    return res.status(404).json({ message: "Book not found" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving book" });
+  }
+});
+
+// Get books by author using async/await with Axios
+public_users.get('/author/:author', async (req, res) => {
+  try {
+    const response = await axios.get('http://localhost:5000/');
+    const result = Object.values(response.data).filter(
+      book => book.author === req.params.author
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving books by author" });
+  }
+});
+
+// Get books by title using async/await with Axios
+public_users.get('/title/:title', async (req, res) => {
+  try {
+    const response = await axios.get('http://localhost:5000/');
+    const result = Object.values(response.data).filter(
+      book => book.title === req.params.title
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving books by title" });
+  }
+});
+
+public_users.get('/review/:isbn', (req, res) => {
   const isbn = req.params.isbn;
-
-  return res.status(200).json(books[isbn]);
-
-});
-
-
-// Get by author
-public_users.get('/author/:author', function (req, res) {
-
-  const author = req.params.author;
-
-  let filteredBooks = Object.values(books).filter(
-    (book) => book.author === author
-  );
-
-  return res.status(200).json(filteredBooks);
-
-});
-
-
-// Get by title
-public_users.get('/title/:title', function (req, res) {
-
-  const title = req.params.title;
-
-  let filteredBooks = Object.values(books).filter(
-    (book) => book.title === title
-  );
-
-  return res.status(200).json(filteredBooks);
-
-});
-
-
-// Get review
-public_users.get('/review/:isbn', function (req, res) {
-
-  const isbn = req.params.isbn;
-
-  return res.status(200).json(
-    books[isbn].reviews
-  );
-
+  return res.status(200).json(books[isbn].reviews);
 });
 
 module.exports.general = public_users;
